@@ -27,11 +27,11 @@ function LiveTable(props) {
 
   if (rx !== null) {
     for (var ind in rx.present) {
-      row.push({ rollNo: rx.present[ind], status: "Present" })
+      row.push({ rollNo: rx.present[ind], status: "Present ✅" })
     }
 
     for (ind in rx.absent) {
-      row.push({ rollNo: rx.absent[ind], status: "Absent" })
+      row.push({ rollNo: rx.absent[ind], status: "Absent ❌" })
     }
   }
 
