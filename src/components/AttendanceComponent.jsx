@@ -36,7 +36,7 @@ function AttendanceComponent(props) {
     present: [],
     absent: [],
   })
-  const [prevContext, setPrevContext] = useState(1)
+  const [prevContext, setPrevContext] = useState(0)
 
   const toggleRecord = () => {
     setRecording(!recording)
