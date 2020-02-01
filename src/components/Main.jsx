@@ -32,7 +32,7 @@ const useStyles = makeStyles((theme) => ({
 function Main() {
   const classes = useStyles()
 
-  const savedTheme = localStorage.getItem("theme") || "dark"
+  const savedTheme = localStorage.getItem("theme") || "light"
   localStorage.setItem("theme", savedTheme)
 
   const [theme, setTheme] = useState({

@@ -21,7 +21,7 @@ export class MicComponent extends Component {
         className="w-100"
         backgroundColor={bgCol}
         strokeColor={stCol}
-        mimeType="audio/mp3"
+        mimeType="audio/wav"
         onStop={onStop}
         onData={onClick}
       />

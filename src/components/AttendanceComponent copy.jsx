@@ -20,33 +20,35 @@ const useStyles = makeStyles((theme) => ({
   },
 }))
 
-const removeDuplicates = (array) => {
-  array.splice(0, array.length, ...new Set(array))
-}
-
 function AttendanceComponent(props) {
   const { background, secondary } = props.palette
   const classes = useStyles()
 
-  const [record, setRecord] = useState(false)
   const [recording, setRecording] = useState(false)
+  const [record, setRecord] = useState(false)
   const [said, setSaid] = useState("")
   const [recorderStartedAt, setRecorderStartedAt] = useState(Date.now())
-  const [attendanceData, setAttendanceData] = useState({
-    present: [],
-    absent: [],
-  })
-  const [prevContext, setPrevContext] = useState(1)
+  const [lastBlob, setLastBlob] = useState(null)
+  const [attendanceData, setAttendanceData] = useState(null)
+  const [keeey, setKeeey] = useState(1)
+
+  const recordButtonClick = () => {
+    toggleRecord()
+    setTimeout(setLastBlob, 0, null)
+  }
 
   const toggleRecord = () => {
     setRecording(!recording)
-    localStorage.removeItem("prevBlob")
     if (record) {
       stopRecording()
     } else {
       startRecording()
       setRecorderStartedAt(Date.now())
     }
+  }
+
+  const updateKey = () => {
+    setKeeey(keeey + 1)
   }
 
   const startRecording = () => {
@@ -59,45 +61,33 @@ function AttendanceComponent(props) {
 
   const onTimeClick = () => {
     if (record && Date.now() - recorderStartedAt >= 5000) {
-      onFiveSeconds()
+      onNSeconds()
+      updateKey()
     }
   }
 
-  const onFiveSeconds = () => {
+  const onNSeconds = () => {
     stopRecording()
     setRecorderStartedAt(Date.now())
     startRecording()
   }
 
   const onStop = (aud) => {
-    const lstPrevBlob = localStorage.getItem("prevBlob")
-    let prevBlob
-    if (lstPrevBlob) {
-      const byteCharacters = atob(lstPrevBlob.substring(22))
-      const byteNumbers = new Array(byteCharacters.length)
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i)
-      }
-      const byteArray = new Uint8Array(byteNumbers)
-      prevBlob = new Blob([byteArray], { type: "audio/wav" })
-    } else {
-      prevBlob = null
-    }
-
+    console.log(aud, lastBlob)
+    // setAttendanceData({ present: [2, 1, 3, 5], absent: [4] })
     let formData = new FormData()
 
-    if (prevBlob) {
+    if (lastBlob)
       formData.append(
         "prevAudio",
         new File(
-          [prevBlob],
+          [lastBlob.blob],
           `audioPrev-${Math.random()
             .toString(36)
             .substring(2)}.wav`,
           { type: "audio/wav" },
         ),
       )
-    }
 
     formData.append(
       "currAudio",
@@ -112,57 +102,20 @@ function AttendanceComponent(props) {
 
     formData.append("key", "amakekeudaina")
     formData.append("end", "100")
-    console.log("prevContext -> ", prevContext)
-    formData.append("prevContext", prevContext)
 
-    Axios.post(
-      "https://smart-attendance-qkfjvcvewq-de.a.run.app/upload",
-      formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      },
-    )
-      .then((dat) => {
-        console.log(dat.data, dat.status)
-
-        if (dat.status !== 201) {
-          setSaid("👂 ~Gibberish~")
-          return
-        }
-
-        setSaid(dat.data["raw"])
-        setPrevContext(dat.data["message"]["prevContext"])
-
-        let ps = [...dat.data["message"]["present"], ...attendanceData.present]
-        let abs = [...dat.data["message"]["absent"], ...attendanceData.absent]
-
-        ps = ps.filter((val) => typeof val === "number")
-        abs = abs.filter((val) => typeof val === "number")
-
-        removeDuplicates(ps)
-        removeDuplicates(abs)
-
-        let newAttendanceData = {
-          present: ps,
-          absent: abs,
-        }
-
-        console.log(newAttendanceData)
-
-        setAttendanceData(newAttendanceData)
-      })
+    Axios.post("http://localhost:8080/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })
+      .then((dat) => console.log(dat))
       .catch((err) => console.log(err))
 
-    let fr = new FileReader()
-    fr.onload = (e) => {
-      localStorage.setItem("prevBlob", e.target.result)
-    }
-    fr.readAsDataURL(aud.blob)
+    setLastBlob(aud)
   }
 
   return (
     <>
       <MicComponent
+        key={keeey}
         record={record}
         bgCol={background.default}
         stCol={secondary.light}
@@ -172,7 +125,7 @@ function AttendanceComponent(props) {
       <Button
         size="medium"
         variant="contained"
-        onClick={toggleRecord}
+        onClick={recordButtonClick}
         color={recording ? "primary" : "secondary"}
       >
         {recording ? "Recording" : "Record"}
@@ -186,7 +139,7 @@ function AttendanceComponent(props) {
               color="textSecondary"
               gutterBottom
             >
-              I have heard
+              You have said
             </Typography>
             <Typography variant="h5" component="h2">
               {said}
